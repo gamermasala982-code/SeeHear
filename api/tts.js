@@ -2,6 +2,7 @@ import { GoogleGenAI } from '@google/genai';
 
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
+  
   if (req.method !== 'POST') {
     res.setHeader('Allow', ['POST']);
     return res.status(405).json({ error: 'Method Not Allowed' });
@@ -12,50 +13,49 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Text is required for speech generation.' });
   }
 
-  // 1. Secure API Configuration (Server-Side Only)
+  // Secure API Configuration (Server-Side Only)
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
     return res.status(503).json({ error: 'GEMINI_API_KEY is missing from server environment variables.' });
   }
 
-  // 2. Strict Language Validation
-  const supportedLangs = ['en', 'hi', 'hinglish'];
-  if (!supportedLangs.includes(language)) {
-    return res.status(400).json({ error: `Language "${language}" is not officially verified for this TTS model.` });
-  }
-
-  // 3. Model & Voice Configuration
-  const model = process.env.GEMINI_TTS_MODEL || 'gemini-3.8-flash-lite-tts';
+  // Model Configuration
+  const modelName = process.env.GEMINI_TTS_MODEL || 'gemini-3.8-flash-lite-tts';
   const ai = new GoogleGenAI({ apiKey: apiKey.trim() });
 
   try {
-    const interaction = await ai.interactions.create({
-      model,
-      input: [{
-        type: 'user_input',
-        content: [{ type: 'text', text: text.slice(0, 1500) }] // Safeguard against overly long single chunks
-      }],
-      response_format: { type: 'audio' },
-      generation_config: {
-        speech_config: {
-          speakers: [ { speaker: "Narrator", voice: "Kore" } ]
+    // Official Single-Speaker GenerateContent Request
+    const response = await ai.models.generateContent({
+      model: modelName,
+      contents: text.slice(0, 1500), // Protect against overly long chunks
+      config: {
+        responseModalities: ["AUDIO"],
+        speechConfig: {
+          voiceConfig: {
+            prebuiltVoiceConfig: {
+              voiceName: "Aoede" // Official, clear, neutral single-speaker voice
+            }
+          }
         }
       }
     });
 
-    const audioData = interaction.output_audio?.data || interaction.steps?.[0]?.content?.[0]?.data;
+    // Extract base64 audio payload from inlineData
+    const part = response.candidates?.[0]?.content?.parts?.[0];
+    const audioData = part?.inlineData?.data || part?.inline_data?.data;
+
     if (!audioData) {
-      throw new Error("No audio data found in Gemini API response.");
+      throw new Error("No audio data returned in Gemini API response.");
     }
 
     return res.status(200).json({
       success: true,
       audioBase64: audioData,
-      modelUsed: model
+      modelUsed: modelName
     });
   } catch (err) {
     console.error("Gemini TTS Error:", err);
-    // Safe error return without leaking stack traces or keys
+    // Return honest failure to frontend without leaking keys
     return res.status(502).json({ error: 'TTS generation failed: ' + (err.message || "Provider error") });
   }
 }
