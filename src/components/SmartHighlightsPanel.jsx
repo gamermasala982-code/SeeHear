@@ -20,9 +20,18 @@ export default function SmartHighlightsPanel({ pageText = "", activeLanguage = "
     });
     const modelsData = await modelsRes.json();
     const list = (modelsData.data || []).map(m => m.id);
-    return list.find(id =>
-      id.includes("llama") && !id.includes("guard") && !id.includes("whisper") && !id.includes("tts")
-    ) || list.find(id => id.includes("mixtral") || id.includes("gemma")) || list[0];
+    // Strictly filter out audio, guard, embeddings, or preview models
+    const validModels = list.filter(id =>
+      !id.includes("guard") &&
+      !id.includes("whisper") &&
+      !id.includes("tts") &&
+      !id.includes("audio") &&
+      !id.includes("orpheus") &&
+      !id.includes("embedding")
+    );
+    return validModels.find(id => id.includes("llama-3.3") || id.includes("llama-3.1") || id.includes("llama3")) ||
+           validModels.find(id => id.includes("mixtral") || id.includes("gemma")) ||
+           validModels[0] || "llama-3.1-70b-versatile";
   };
 
   const generateHighlights = async () => {
