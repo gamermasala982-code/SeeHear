@@ -53,6 +53,16 @@ export default function NarrationPage({ documents = [], activeDocId: initialDocI
     if (synthRef) synthRef.cancel();
   }, [textToRead, selectedSectionId]);
 
+  // Detect language & pick appropriate speech locale
+  const detectLanguageAndVoice = (text) => {
+    const hasDevanagari = /[\u0900-\u097F]/.test(text);
+    const hasHinglishKeywords = /\b(hai|mein|ko|se|aur|kaise|kya|karna|hona)\b/i.test(text);
+    
+    if (hasDevanagari) return "hi-IN";
+    if (hasHinglishKeywords) return "hi-IN"; // Browser speech engine handles Latin-script Hinglish reasonably well under Hindi/English locale
+    return "en-US";
+  };
+
   const speakSentence = (index) => {
     if (!synthRef || index >= sentences.length) {
       setIsPlaying(false);
@@ -62,8 +72,18 @@ export default function NarrationPage({ documents = [], activeDocId: initialDocI
     setCurrentIndex(index);
     setIsPlaying(true);
 
-    const utter = new SpeechSynthesisUtterance(sentences[index]);
+    const sentenceText = sentences[index];
+    const utter = new SpeechSynthesisUtterance(sentenceText);
     utter.rate = rate;
+    
+    // Auto set voice language
+    const langCode = detectLanguageAndVoice(sentenceText);
+    utter.lang = langCode;
+
+    const voices = synthRef.getVoices();
+    const matchedVoice = voices.find(v => v.lang.startsWith(langCode.slice(0, 2))) || voices[0];
+    if (matchedVoice) utter.voice = matchedVoice;
+
     utter.onend = () => {
       if (index + 1 < sentences.length) {
         speakSentence(index + 1);
@@ -183,7 +203,7 @@ export default function NarrationPage({ documents = [], activeDocId: initialDocI
     <div style={{ padding: "32px", maxWidth: "900px", margin: "0 auto", display: "flex", flexDirection: "column", gap: "16px", fontFamily: "sans-serif" }}>
       <div>
         <h1 style={{ fontSize: "22px", fontWeight: "bold", color: "#0f172a" }}>🎙️ Live Narration Studio</h1>
-        <p style={{ fontSize: "13px", color: "#64748b" }}>Select any document and page, listen to synchronized voice narration, click sentences to rehear, and ask AI.</p>
+        <p style={{ fontSize: "13px", color: "#64748b" }}>Automatic multi-language voice switching (English, Hindi, Hinglish), sentence highlighting, word lookups, and AI tutoring.</p>
       </div>
 
       {/* Selectors */}
