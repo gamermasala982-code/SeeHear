@@ -39,6 +39,7 @@ const NAV_ITEMS = [
   { id: 'understand', label: 'Understand', icon: Sparkles },
   { id: 'ask', label: 'Ask Across Sources', icon: MessageSquare },
   { id: 'planner', label: 'Study Planner', icon: CalendarCheck },
+  { id: 'narration', label: 'Narration', icon: BookOpen },
   { id: 'settings', label: 'Settings', icon: Settings },
 ];
 
@@ -339,6 +340,10 @@ export default function App() {
               language={language}
               onChangeLanguage={setLanguage}
             />
+          )}
+
+          {activeSection === 'narration' && (
+            <NarrationPage />
           )}
 
           {activeSection === 'planner' && (
