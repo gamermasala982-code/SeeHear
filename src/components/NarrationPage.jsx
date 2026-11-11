@@ -6,7 +6,6 @@ export default function NarrationPage({ documents = [], activeDocId: initialDocI
   const [selectedDocId, setSelectedDocId] = useState(() => initialDocId || documents[0]?.id || "");
   const currentDoc = documents.find(d => d.id === selectedDocId) || documents[0] || { title: "Sample Doc", content: "Sample content." };
   
-  // Normalize sections or generate pages from content if sections don't exist
   const rawSections = currentDoc?.sections || currentDoc?.pages || [];
   const sections = rawSections.length > 0 
     ? rawSections.map((s, idx) => ({ id: s.id || `sec-${idx}`, title: s.title || s.heading || `Page ${idx + 1}`, content: s.content || s.text || s.body || JSON.stringify(s) }))
@@ -97,6 +96,29 @@ export default function NarrationPage({ documents = [], activeDocId: initialDocI
     setCurrentIndex(-1);
   };
 
+  const getActiveGroqModel = async () => {
+    try {
+      const modelsRes = await fetch("https://api.groq.com/openai/v1/models", {
+        headers: { Authorization: `Bearer ${GROQ_KEY}` }
+      });
+      const modelsData = await modelsRes.json();
+      const list = (modelsData.data || []).map(m => m.id);
+      const validModels = list.filter(id =>
+        !id.includes("guard") &&
+        !id.includes("whisper") &&
+        !id.includes("tts") &&
+        !id.includes("audio") &&
+        !id.includes("orpheus") &&
+        !id.includes("embedding")
+      );
+      return validModels.find(id => id.includes("llama-3.3") || id.includes("llama-3.1") || id.includes("llama3")) ||
+             validModels.find(id => id.includes("mixtral") || id.includes("gemma")) ||
+             validModels[0] || "llama-3.1-70b-versatile";
+    } catch {
+      return "llama-3.1-70b-versatile";
+    }
+  };
+
   const lookupWord = async (word) => {
     const clean = word.replace(/[^a-zA-Z]/g, "");
     if (!clean) return;
@@ -104,11 +126,12 @@ export default function NarrationPage({ documents = [], activeDocId: initialDocI
     setIsDefining(true);
     setWordDefinition("");
     try {
+      const activeModel = await getActiveGroqModel();
       const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${GROQ_KEY}` },
         body: JSON.stringify({
-          model: "llama-3.1-70b-versatile",
+          model: activeModel,
           messages: [
             { role: "system", content: `Explain the word "${clean}" simply in 1 short sentence.` },
             { role: "user", content: `Define: ${clean}` }
@@ -117,9 +140,10 @@ export default function NarrationPage({ documents = [], activeDocId: initialDocI
         })
       });
       const data = await res.json();
+      if (data.error) throw new Error(data.error.message);
       setWordDefinition(data.choices?.[0]?.message?.content || "Definition not found.");
-    } catch {
-      setWordDefinition("Could not fetch definition.");
+    } catch (err) {
+      setWordDefinition("Error: " + err.message);
     } finally {
       setIsDefining(false);
     }
@@ -132,11 +156,12 @@ export default function NarrationPage({ documents = [], activeDocId: initialDocI
     setChatAnswer("");
     try {
       const activeContextSentence = currentIndex >= 0 ? sentences[currentIndex] : sentences[0];
+      const activeModel = await getActiveGroqModel();
       const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${GROQ_KEY}` },
         body: JSON.stringify({
-          model: "llama-3.1-70b-versatile",
+          model: activeModel,
           messages: [
             { role: "system", content: `You are an AI study tutor. Answer the user's question about this sentence: "${activeContextSentence}". Keep it concise.` },
             { role: "user", content: question }
@@ -145,9 +170,10 @@ export default function NarrationPage({ documents = [], activeDocId: initialDocI
         })
       });
       const data = await res.json();
+      if (data.error) throw new Error(data.error.message);
       setChatAnswer(data.choices?.[0]?.message?.content || "No answer generated.");
-    } catch {
-      setChatAnswer("Error getting answer from AI.");
+    } catch (err) {
+      setChatAnswer("Error: " + err.message);
     } finally {
       setIsAsking(false);
     }
