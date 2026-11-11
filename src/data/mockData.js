@@ -3,7 +3,7 @@ export const LANGUAGES = [
   { id: 'hi', label: 'Hindi', nativeLabel: 'हिन्दी', isIllustrative: false },
   {
     id: 'hinglish',
-    label: 'Hinglish (Illustrative Demo)',
+    label: 'Hinglish',
     nativeLabel: 'Hinglish (Demo)',
     isIllustrative: true,
   },
@@ -24,7 +24,7 @@ export const SAMPLE_DOCUMENTS = [
     pages: 14,
     estimatedMinutes: 18,
     dateAdded: '2025-02-10',
-    sourceType: 'Built-in Verified Sample',
+    sourceType: 'Sample Document',
     summary:
       'Analyzes the judicial transformation of Article 21 from a narrow procedural safeguard in A.K. Gopalan (1950) to a substantive guarantee of fairness and dignity in Maneka Gandhi (1978).',
     sections: [
@@ -116,7 +116,7 @@ export const SAMPLE_DOCUMENTS = [
     pages: 11,
     estimatedMinutes: 15,
     dateAdded: '2025-02-12',
-    sourceType: 'Built-in Verified Sample',
+    sourceType: 'Sample Document',
     summary:
       'Bridges classical Clausius macro-thermodynamics with Ludwig Boltzmann’s statistical mechanics interpretation of entropy and spontaneous processes.',
     sections: [
@@ -204,7 +204,7 @@ export const SAMPLE_DOCUMENTS = [
     pages: 9,
     estimatedMinutes: 12,
     dateAdded: '2025-02-14',
-    sourceType: 'Built-in Verified Sample',
+    sourceType: 'Sample Document',
     summary:
       'Examines why greedy edge relaxation succeeds in non-negative weighted graphs (Dijkstra) while negative edge weights require Bellman-Ford dynamic programming.',
     sections: [

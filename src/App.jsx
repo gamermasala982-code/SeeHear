@@ -269,7 +269,7 @@ export default function App() {
               >
                 SeeHear
               </button>
-              <span className="brand-badge">Demo</span>
+              
             </div>
             <nav aria-label="Primary">{renderNavItems()}</nav>
           </div>
@@ -335,6 +335,8 @@ export default function App() {
             <CrossSourceQA
               documents={documents}
               onOpenDocument={handleOpenDocument}
+              language={language}
+              onChangeLanguage={setLanguage}
             />
           )}
 
