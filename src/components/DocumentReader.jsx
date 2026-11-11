@@ -1,5 +1,4 @@
 import SmartNotesPanel from "./SmartNotesPanel";
-import LiveNarrationPanel from "./LiveNarrationPanel";
 import SmartHighlightsPanel from "./SmartHighlightsPanel";
 import React, { useState, useEffect } from "react";
 import {
