@@ -55,6 +55,7 @@ export default function SmartNotesPanel(props) {
     return (
       <div ref={containerRef}>
         <SmartHighlightsPanel {...props} />
+            {activeTab === "narration" && <LiveNarrationPanel pageText={pageText} activeLanguage={activeLanguage} />}
       </div>
     );
   }
