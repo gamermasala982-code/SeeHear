@@ -15,14 +15,13 @@ export default function LiveNarrationPanel({ pageText = "", activeLanguage = "En
   const [isAsking, setIsAsking] = useState(false);
 
   const synthRef = window.speechSynthesis;
-  const utteranceRef = useRef(null);
 
   useEffect(() => {
     let cleanText = pageText;
     if (!cleanText || cleanText.length < 20) {
       cleanText = Array.from(document.querySelectorAll("p, h1, h2, h3"))
         .map(el => el.innerText?.trim())
-        .filter(t => t && t.length > 15)
+        .filter(t => t && t.length > 15 && !t.includes("Smart Highlights"))
         .join(" ");
     }
     const split = cleanText
@@ -47,9 +46,6 @@ export default function LiveNarrationPanel({ pageText = "", activeLanguage = "En
 
     const utter = new SpeechSynthesisUtterance(sentences[index]);
     utter.rate = rate;
-    utter.onboundary = (event) => {
-      // track word boundaries if needed
-    };
     utter.onend = () => {
       if (index + 1 < sentences.length) {
         speakSentence(index + 1);
@@ -59,7 +55,6 @@ export default function LiveNarrationPanel({ pageText = "", activeLanguage = "En
       }
     };
     utter.onerror = () => setIsPlaying(false);
-    utteranceRef.current = utter;
     synthRef.speak(utter);
   };
 
@@ -140,11 +135,10 @@ export default function LiveNarrationPanel({ pageText = "", activeLanguage = "En
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "14px", padding: "4px 0" }}>
-      {/* Top Controller Bar */}
+    <div style={{ display: "flex", flexDirection: "column", gap: "12px", padding: "4px 0" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "#f8fafc", padding: "10px 12px", borderRadius: "8px", border: "1px solid #cbd5e1" }}>
         <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-          <button onClick={togglePlay} style={{ padding: "6px 14px", background: "#2563eb", color: "#fff", border: "none", borderRadius: "6px", fontWeight: "bold", cursor: "pointer", fontSize: "12px" }}>
+          <button onClick={togglePlay} style={{ padding: "6px 12px", background: "#2563eb", color: "#fff", border: "none", borderRadius: "6px", fontWeight: "bold", cursor: "pointer", fontSize: "12px" }}>
             {isPlaying ? "⏸ Pause" : "▶ Play Audio"}
           </button>
           <button onClick={stopNarration} style={{ padding: "6px 10px", background: "#ef4444", color: "#fff", border: "none", borderRadius: "6px", fontWeight: "bold", cursor: "pointer", fontSize: "12px" }}>
@@ -162,10 +156,9 @@ export default function LiveNarrationPanel({ pageText = "", activeLanguage = "En
         </div>
       </div>
 
-      {/* Synchronized Sentence Stream */}
-      <div style={{ maxHeight: "240px", overflowY: "auto", border: "1px solid #cbd5e1", borderRadius: "8px", padding: "12px", background: "#fff", display: "flex", flexDirection: "column", gap: "8px" }}>
+      <div style={{ maxHeight: "220px", overflowY: "auto", border: "1px solid #cbd5e1", borderRadius: "8px", padding: "10px", background: "#fff", display: "flex", flexDirection: "column", gap: "6px" }}>
         <div style={{ fontSize: "11px", fontWeight: "bold", textTransform: "uppercase", color: "#64748b", borderBottom: "1px solid #e2e8f0", paddingBottom: "4px" }}>
-          Interactive Sentence Narration (Click to Rehear)
+          Synchronized Narration Stream (Click sentence to rehear)
         </div>
         {sentences.map((sent, idx) => {
           const active = idx === currentIndex;
@@ -182,8 +175,7 @@ export default function LiveNarrationPanel({ pageText = "", activeLanguage = "En
                 fontSize: "12.5px",
                 lineHeight: "1.5",
                 color: active ? "#451a03" : "#334155",
-                fontWeight: active ? "600" : "400",
-                transition: "all 0.2s ease"
+                fontWeight: active ? "600" : "400"
               }}
             >
               {sent.split(" ").map((word, wIdx) => (
@@ -200,7 +192,6 @@ export default function LiveNarrationPanel({ pageText = "", activeLanguage = "En
         })}
       </div>
 
-      {/* Word Instant Definition Box */}
       {selectedWord && (
         <div style={{ padding: "10px 12px", background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: "8px", fontSize: "12px" }}>
           <div style={{ display: "flex", justifyContent: "space-between", fontWeight: "bold", color: "#1e40af", marginBottom: "4px" }}>
@@ -211,13 +202,12 @@ export default function LiveNarrationPanel({ pageText = "", activeLanguage = "En
         </div>
       )}
 
-      {/* Pause & Ask AI Panel */}
       <div style={{ padding: "10px 12px", background: "#f8fafc", border: "1px solid #cbd5e1", borderRadius: "8px", display: "flex", flexDirection: "column", gap: "8px" }}>
         <span style={{ fontSize: "11px", fontWeight: "bold", textTransform: "uppercase", color: "#475569" }}>💬 Pause & Ask AI About Sentence</span>
         <form onSubmit={askAboutSentence} style={{ display: "flex", gap: "6px" }}>
           <input
             type="text"
-            placeholder="Ask a question about the active sentence..."
+            placeholder="Ask question about active sentence..."
             value={question}
             onChange={(e) => setQuestion(e.target.value)}
             style={{ flex: 1, padding: "6px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "12px" }}
