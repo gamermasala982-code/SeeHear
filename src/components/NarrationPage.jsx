@@ -3,10 +3,10 @@ import React, { useState, useEffect } from "react";
 const GROQ_KEY = "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";
 
 export default function NarrationPage({ documents = [], activeDocId: initialDocId }) {
-  const [selectedDocId, setSelectedDocId] = useState(initialDocId || documents[0]?.id || "");
-  const currentDoc = documents.find(d => d.id === selectedDocId) || documents[0];
+  const [selectedDocId, setSelectedDocId] = useState(() => initialDocId || documents[0]?.id || "");
+  const currentDoc = documents.find(d => d.id === selectedDocId) || documents[0] || { title: "Sample Doc", sections: [{ id: "sec1", title: "Page 1", content: "Sample content." }] };
   
-  const [selectedSectionId, setSelectedSectionId] = useState(currentDoc?.sections?.[0]?.id || "");
+  const [selectedSectionId, setSelectedSectionId] = useState(() => currentDoc?.sections?.[0]?.id || "");
   const currentSection = currentDoc?.sections?.find(s => s.id === selectedSectionId) || currentDoc?.sections?.[0] || { title: "Page 1", content: currentDoc?.content || "No content." };
 
   const textToRead = currentSection.content || currentDoc?.content || "No text available for this page.";
@@ -24,11 +24,15 @@ export default function NarrationPage({ documents = [], activeDocId: initialDocI
 
   const synthRef = window.speechSynthesis;
 
-  useEffect(() => {
-    if (currentDoc?.sections?.[0]) {
-      setSelectedSectionId(currentDoc.sections[0].id);
+  // Update section when document changes
+  const handleDocChange = (e) => {
+    const newDocId = e.target.value;
+    setSelectedDocId(newDocId);
+    const newDoc = documents.find(d => d.id === newDocId);
+    if (newDoc?.sections?.[0]) {
+      setSelectedSectionId(newDoc.sections[0].id);
     }
-  }, [selectedDocId]);
+  };
 
   useEffect(() => {
     const split = textToRead
@@ -148,11 +152,11 @@ export default function NarrationPage({ documents = [], activeDocId: initialDocI
         <p style={{ fontSize: "13px", color: "#64748b" }}>Select any document and page, listen to synchronized voice narration, click sentences to rehear, and ask AI.</p>
       </div>
 
-      {/* Document & Page Selectors */}
+      {/* Fully Interactive Document & Page Selectors */}
       <div style={{ display: "flex", gap: "12px", background: "#fff", border: "1px solid #cbd5e1", borderRadius: "8px", padding: "14px" }}>
         <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "6px" }}>
           <label style={{ fontSize: "11px", fontWeight: "bold", textTransform: "uppercase", color: "#475569" }}>Select Document</label>
-          <select value={selectedDocId} onChange={(e) => setSelectedDocId(e.target.value)} style={{ padding: "8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "12.5px" }}>
+          <select value={selectedDocId} onChange={handleDocChange} style={{ padding: "8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "12.5px", background: "#fff", cursor: "pointer" }}>
             {documents.map(d => (
               <option key={d.id} value={d.id}>{d.title}</option>
             ))}
@@ -160,7 +164,7 @@ export default function NarrationPage({ documents = [], activeDocId: initialDocI
         </div>
         <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "6px" }}>
           <label style={{ fontSize: "11px", fontWeight: "bold", textTransform: "uppercase", color: "#475569" }}>Select Page / Section</label>
-          <select value={selectedSectionId} onChange={(e) => setSelectedSectionId(e.target.value)} style={{ padding: "8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "12.5px" }}>
+          <select value={selectedSectionId} onChange={(e) => setSelectedSectionId(e.target.value)} style={{ padding: "8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "12.5px", background: "#fff", cursor: "pointer" }}>
             {currentDoc?.sections?.map(s => (
               <option key={s.id} value={s.id}>{s.title}</option>
             ))}
