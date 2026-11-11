@@ -1,3 +1,4 @@
+import NarrationPage from "./components/NarrationPage";
 import React, { useState, useEffect } from 'react';
 import {
   Home,
