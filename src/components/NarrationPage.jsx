@@ -2,10 +2,15 @@ import React, { useState, useEffect } from "react";
 
 const GROQ_KEY = "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";
 
-export default function NarrationPage() {
-  const [inputText, setInputText] = useState(
-    "Article 21 of the Constitution of India states: No person shall be deprived of his life or personal liberty except according to procedure established by law."
-  );
+export default function NarrationPage({ documents = [], activeDocId: initialDocId }) {
+  const [selectedDocId, setSelectedDocId] = useState(initialDocId || documents[0]?.id || "");
+  const currentDoc = documents.find(d => d.id === selectedDocId) || documents[0];
+  
+  const [selectedSectionId, setSelectedSectionId] = useState(currentDoc?.sections?.[0]?.id || "");
+  const currentSection = currentDoc?.sections?.find(s => s.id === selectedSectionId) || currentDoc?.sections?.[0] || { title: "Page 1", content: currentDoc?.content || "No content." };
+
+  const textToRead = currentSection.content || currentDoc?.content || "No text available for this page.";
+
   const [sentences, setSentences] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(-1);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -20,16 +25,22 @@ export default function NarrationPage() {
   const synthRef = window.speechSynthesis;
 
   useEffect(() => {
-    const split = inputText
+    if (currentDoc?.sections?.[0]) {
+      setSelectedSectionId(currentDoc.sections[0].id);
+    }
+  }, [selectedDocId]);
+
+  useEffect(() => {
+    const split = textToRead
       .replace(/([.?!])\s*(?=[A-Z])/g, "$1|")
       .split("|")
       .map(s => s.trim())
       .filter(s => s.length > 3);
-    setSentences(split.length > 0 ? split : [inputText]);
+    setSentences(split.length > 0 ? split : [textToRead]);
     setCurrentIndex(-1);
     setIsPlaying(false);
     if (synthRef) synthRef.cancel();
-  }, [inputText]);
+  }, [textToRead, selectedSectionId]);
 
   const speakSentence = (index) => {
     if (!synthRef || index >= sentences.length) {
@@ -134,19 +145,30 @@ export default function NarrationPage() {
     <div style={{ padding: "32px", maxWidth: "900px", margin: "0 auto", display: "flex", flexDirection: "column", gap: "16px", fontFamily: "sans-serif" }}>
       <div>
         <h1 style={{ fontSize: "22px", fontWeight: "bold", color: "#0f172a" }}>🎙️ Live Narration Studio</h1>
-        <p style={{ fontSize: "13px", color: "#64748b" }}>Synchronized audio narration, sentence highlighting, word lookups, and AI tutoring.</p>
+        <p style={{ fontSize: "13px", color: "#64748b" }}>Select any document and page, listen to synchronized voice narration, click sentences to rehear, and ask AI.</p>
       </div>
 
-      <div style={{ background: "#fff", border: "1px solid #cbd5e1", borderRadius: "8px", padding: "14px", display: "flex", flexDirection: "column", gap: "6px" }}>
-        <label style={{ fontSize: "11px", fontWeight: "bold", textTransform: "uppercase", color: "#475569" }}>Text Content to Narrate</label>
-        <textarea
-          rows={3}
-          value={inputText}
-          onChange={(e) => setInputText(e.target.value)}
-          style={{ width: "100%", padding: "8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "12.5px" }}
-        />
+      {/* Document & Page Selectors */}
+      <div style={{ display: "flex", gap: "12px", background: "#fff", border: "1px solid #cbd5e1", borderRadius: "8px", padding: "14px" }}>
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "6px" }}>
+          <label style={{ fontSize: "11px", fontWeight: "bold", textTransform: "uppercase", color: "#475569" }}>Select Document</label>
+          <select value={selectedDocId} onChange={(e) => setSelectedDocId(e.target.value)} style={{ padding: "8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "12.5px" }}>
+            {documents.map(d => (
+              <option key={d.id} value={d.id}>{d.title}</option>
+            ))}
+          </select>
+        </div>
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "6px" }}>
+          <label style={{ fontSize: "11px", fontWeight: "bold", textTransform: "uppercase", color: "#475569" }}>Select Page / Section</label>
+          <select value={selectedSectionId} onChange={(e) => setSelectedSectionId(e.target.value)} style={{ padding: "8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "12.5px" }}>
+            {currentDoc?.sections?.map(s => (
+              <option key={s.id} value={s.id}>{s.title}</option>
+            ))}
+          </select>
+        </div>
       </div>
 
+      {/* Audio Controller Bar */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "#f8fafc", padding: "12px 16px", borderRadius: "8px", border: "1px solid #cbd5e1" }}>
         <div style={{ display: "flex", gap: "8px" }}>
           <button onClick={togglePlay} style={{ padding: "6px 14px", background: "#2563eb", color: "#fff", border: "none", borderRadius: "6px", fontWeight: "bold", cursor: "pointer", fontSize: "12px" }}>
@@ -167,9 +189,10 @@ export default function NarrationPage() {
         </div>
       </div>
 
-      <div style={{ background: "#fff", border: "1px solid #cbd5e1", borderRadius: "8px", padding: "14px", display: "flex", flexDirection: "column", gap: "8px", maxHeight: "280px", overflowY: "auto" }}>
+      {/* Synchronized Sentence Stream */}
+      <div style={{ background: "#fff", border: "1px solid #cbd5e1", borderRadius: "8px", padding: "14px", display: "flex", flexDirection: "column", gap: "8px", maxHeight: "300px", overflowY: "auto" }}>
         <div style={{ fontSize: "11px", fontWeight: "bold", textTransform: "uppercase", color: "#64748b", borderBottom: "1px solid #e2e8f0", paddingBottom: "4px" }}>
-          Interactive Sentences (Click to Rehear)
+          Synchronized Sentences (Click any sentence to jump & rehear, click words for definition)
         </div>
         {sentences.map((sent, idx) => {
           const active = idx === currentIndex;
@@ -214,7 +237,7 @@ export default function NarrationPage() {
       )}
 
       <div style={{ background: "#fff", border: "1px solid #cbd5e1", borderRadius: "8px", padding: "14px", display: "flex", flexDirection: "column", gap: "8px" }}>
-        <span style={{ fontSize: "11px", fontWeight: "bold", textTransform: "uppercase", color: "#475569" }}>💬 Pause & Ask AI About Sentence</span>
+        <span style={{ fontSize: "11px", fontWeight: "bold", textTransform: "uppercase", color: "#475569" }}>💬 Pause & Ask AI About Active Sentence</span>
         <form onSubmit={askAboutSentence} style={{ display: "flex", gap: "6px" }}>
           <input
             type="text"
