@@ -4,12 +4,18 @@ const GROQ_KEY = "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";
 
 export default function NarrationPage({ documents = [], activeDocId: initialDocId }) {
   const [selectedDocId, setSelectedDocId] = useState(() => initialDocId || documents[0]?.id || "");
-  const currentDoc = documents.find(d => d.id === selectedDocId) || documents[0] || { title: "Sample Doc", sections: [{ id: "sec1", title: "Page 1", content: "Sample content." }] };
+  const currentDoc = documents.find(d => d.id === selectedDocId) || documents[0] || { title: "Sample Doc", content: "Sample content." };
   
-  const [selectedSectionId, setSelectedSectionId] = useState(() => currentDoc?.sections?.[0]?.id || "");
-  const currentSection = currentDoc?.sections?.find(s => s.id === selectedSectionId) || currentDoc?.sections?.[0] || { title: "Page 1", content: currentDoc?.content || "No content." };
+  // Normalize sections or generate pages from content if sections don't exist
+  const rawSections = currentDoc?.sections || currentDoc?.pages || [];
+  const sections = rawSections.length > 0 
+    ? rawSections.map((s, idx) => ({ id: s.id || `sec-${idx}`, title: s.title || s.heading || `Page ${idx + 1}`, content: s.content || s.text || s.body || JSON.stringify(s) }))
+    : [{ id: "p1", title: "Page 1", content: currentDoc?.content || currentDoc?.text || "No content found." }];
 
-  const textToRead = currentSection.content || currentDoc?.content || "No text available for this page.";
+  const [selectedSectionId, setSelectedSectionId] = useState(() => sections[0]?.id || "p1");
+  const currentSection = sections.find(s => s.id === selectedSectionId) || sections[0];
+
+  const textToRead = currentSection.content || "No text available for this page.";
 
   const [sentences, setSentences] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(-1);
@@ -24,13 +30,15 @@ export default function NarrationPage({ documents = [], activeDocId: initialDocI
 
   const synthRef = window.speechSynthesis;
 
-  // Update section when document changes
   const handleDocChange = (e) => {
     const newDocId = e.target.value;
     setSelectedDocId(newDocId);
     const newDoc = documents.find(d => d.id === newDocId);
-    if (newDoc?.sections?.[0]) {
-      setSelectedSectionId(newDoc.sections[0].id);
+    const newSections = newDoc?.sections || newDoc?.pages || [];
+    if (newSections.length > 0) {
+      setSelectedSectionId(newSections[0].id || "sec-0");
+    } else {
+      setSelectedSectionId("p1");
     }
   };
 
@@ -152,7 +160,7 @@ export default function NarrationPage({ documents = [], activeDocId: initialDocI
         <p style={{ fontSize: "13px", color: "#64748b" }}>Select any document and page, listen to synchronized voice narration, click sentences to rehear, and ask AI.</p>
       </div>
 
-      {/* Fully Interactive Document & Page Selectors */}
+      {/* Selectors */}
       <div style={{ display: "flex", gap: "12px", background: "#fff", border: "1px solid #cbd5e1", borderRadius: "8px", padding: "14px" }}>
         <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "6px" }}>
           <label style={{ fontSize: "11px", fontWeight: "bold", textTransform: "uppercase", color: "#475569" }}>Select Document</label>
@@ -165,7 +173,7 @@ export default function NarrationPage({ documents = [], activeDocId: initialDocI
         <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "6px" }}>
           <label style={{ fontSize: "11px", fontWeight: "bold", textTransform: "uppercase", color: "#475569" }}>Select Page / Section</label>
           <select value={selectedSectionId} onChange={(e) => setSelectedSectionId(e.target.value)} style={{ padding: "8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "12.5px", background: "#fff", cursor: "pointer" }}>
-            {currentDoc?.sections?.map(s => (
+            {sections.map(s => (
               <option key={s.id} value={s.id}>{s.title}</option>
             ))}
           </select>
