@@ -343,7 +343,7 @@ export default function App() {
           )}
 
           {activeSection === 'narration' && (
-            <NarrationPage />
+            <NarrationPage documents={documents} activeDocId={activeDocId} />
           )}
 
           {activeSection === 'planner' && (
